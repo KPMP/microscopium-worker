@@ -4,9 +4,7 @@ const fs = require('fs');
 class MicroscopiumWorker {
 
     constructor() {
-        this.result = { cells: {}, genes: {} };
-        this.siteCellNamesToCanonical = {};
-        this.schematic = {};
+        this.result = { cells: {}, genes: {}, siteCellNamesToCanonical: {}, schematic: {} };
     }
 
     static getInstance() {
@@ -19,25 +17,18 @@ class MicroscopiumWorker {
     }
 
     parseSchematicMap(fileName) {
-        return new Promise(function(resolve, reject) {
-
-            let worker = MicroscopiumWorker.getInstance();
-
-            let lineReader = readline.createInterface({
-                input: fs.createReadStream(fileName)
-            });
+        return new Promise((resolve, reject) => {
+            let worker = MicroscopiumWorker.getInstance()
+                , lineReader = readline.createInterface({ input: fs.createReadStream(fileName) });
 
             lineReader.on('line', (line) => {
-
-                console.log('+++ line', line);
-
                 let values = line.split(",")
                     , canonStructure = values[0]
                     , canonCellName = values[1]
                     , jeffCellName = values[2]
                     , umichScCellName = values[3]
                     , ucsfScCellName = values[4]
-                    , ucsdScnCellName = values[5]
+                    , ucsdSnCellName = values[5]
                     , guess = values[6]
                     , row = {
                     canonCellName: canonCellName
@@ -51,20 +42,23 @@ class MicroscopiumWorker {
 
                 //Parse values for site cell names to canonical mapping
                 if(umichScCellName != null && umichScCellName.length > 0) {
-                    worker.siteCellNamesToCanonical[umichScCellName] = row;
+                    row.site = 'umich_sc';
+                    worker.result.siteCellNamesToCanonical[umichScCellName] = row;
                 }
 
                 if(ucsfScCellName != null && ucsfScCellName.length > 0) {
-                    worker.siteCellNamesToCanonical[ucsfScCellName] = row;
+                    row.site = 'ucsf_sc';
+                    worker.result.siteCellNamesToCanonical[ucsfScCellName] = row;
                 }
 
-                if(ucsdScnCellName != null && ucsdScnCellName.length > 0) {
-                    worker.siteCellNamesToCanonical[ucsdScnCellName] = row;
+                if(ucsdSnCellName != null && ucsdSnCellName.length > 0) {
+                    row.site = 'ucsd_sn';
+                    worker.result.siteCellNamesToCanonical[ucsdSnCellName] = row;
                 }
 
                 //Add entry to schematic
-                if(!worker.schematic.hasOwnProperty(canonCellName)) {
-                    worker.schematic[canonCellName] = {
+                if(!worker.result.schematic.hasOwnProperty(canonCellName)) {
+                    worker.result.schematic[canonCellName] = {
                         canonStructure: canonStructure
                         , canonCellName: canonCellName
                         , jeffCellName: jeffCellName
@@ -74,14 +68,15 @@ class MicroscopiumWorker {
             });
 
             lineReader.on('close', () => {
-                console.log('+++ close');
                 resolve();
             });
         });
     }
 
     parseGeneToCellMap(fileName) {
-
+        return new Promise((resolve, reject) => {
+            resolve();
+        });
     }
 }
 
