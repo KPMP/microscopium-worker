@@ -1,91 +1,187 @@
 const readline = require('readline');
 const fs = require('fs');
+const _ = require('lodash');
+
+const SITES = {
+    UMICH_SC: 'umich_sc'
+    , UCSF_SC: 'ucsf_sc'
+    , UCSD_SN: 'ucsd_sn'
+};
+
+const AVG_LOG_FC = '_avgLogFc';
+const P_VAL_ADJ = '_p_val_adj';
 
 class MicroscopiumWorker {
 
     constructor() {
         this.result = { cells: {}, genes: {} };
-        this.siteCellNamesToCanonical = {};
-        this.schematic = {};
     }
 
     static getInstance() {
         if(MicroscopiumWorker.instance == null) {
-            console.log('!!! instancing MicroscopiumWorker');
             MicroscopiumWorker.instance = new MicroscopiumWorker();
         }
 
         return MicroscopiumWorker.instance;
     }
 
-    parseSchematicMap(fileName) {
-        return new Promise(function(resolve, reject) {
-
-            let worker = MicroscopiumWorker.getInstance();
-
-            let lineReader = readline.createInterface({
-                input: fs.createReadStream(fileName)
-            });
+    /**
+     *
+     * @param fileName
+     * @returns {Promise<any>}
+     */
+    parseGeneToCellMap(fileName, siteName) {
+        return new Promise((resolve, reject) => {
+            let worker = MicroscopiumWorker.getInstance()
+                , lineReader = readline.createInterface({ input: fs.createReadStream(fileName) });
 
             lineReader.on('line', (line) => {
+                //Parse CSV of format: gene,p_val_adj,avg_logFC,site_cell_name
+                let values       = line.split(",")
+                    , geneName   = values[0]
+                    , pValAdj    = values[1]
+                    , avgLogFc   = values[2]
+                    , cellName   = values[3]
+                    , f_pValAdj  = parseFloat(pValAdj)
+                    , f_avgLogFc = parseFloat(avgLogFc);
 
-                console.log('+++ line', line);
-
-                let values = line.split(",")
-                    , canonStructure = values[0]
-                    , canonCellName = values[1]
-                    , jeffCellName = values[2]
-                    , umichScCellName = values[3]
-                    , ucsfScCellName = values[4]
-                    , ucsdScnCellName = values[5]
-                    , guess = values[6]
-                    , row = {
-                    canonCellName: canonCellName
-                    , guess: guess
-                };
-
-                //If this is the header row, skip it
-                if(canonStructure == 'canon_structure') {
+                //Skip the header row
+                if(geneName.toLowerCase() == 'gene symbol') {
                     return;
                 }
 
-                //Parse values for site cell names to canonical mapping
-                if(umichScCellName != null && umichScCellName.length > 0) {
-                    worker.siteCellNamesToCanonical[umichScCellName] = row;
+                //Build the row we'll add to the gene and cell collections
+                let generatedDataRow = { gene: geneName, cell: cellName };
+                generatedDataRow['f_' + siteName + P_VAL_ADJ]  = f_pValAdj;
+                generatedDataRow['f_' + siteName + AVG_LOG_FC] = f_avgLogFc;
+
+                //Ensure worker.result.cells[cellName]
+                if(!worker.result.cells.hasOwnProperty(cellName)) {
+                    worker.result.cells[cellName] = { sitesToGenes: {}, rows: {} };
                 }
 
-                if(ucsfScCellName != null && ucsfScCellName.length > 0) {
-                    worker.siteCellNamesToCanonical[ucsfScCellName] = row;
+                //Ensure worker.result.cells[cellName].rows[geneName]
+                if(!worker.result.cells[cellName].rows.hasOwnProperty(geneName)) {
+                    worker.result.cells[cellName].rows[geneName] = generatedDataRow;
                 }
 
-                if(ucsdScnCellName != null && ucsdScnCellName.length > 0) {
-                    worker.siteCellNamesToCanonical[ucsdScnCellName] = row;
+                else {
+                    worker.result.cells[cellName].rows[geneName] =
+                        Object.assign(worker.result.cells[cellName].rows[geneName], generatedDataRow);
                 }
 
-                //Add entry to schematic
-                if(!worker.schematic.hasOwnProperty(canonCellName)) {
-                    worker.schematic[canonCellName] = {
-                        canonStructure: canonStructure
-                        , canonCellName: canonCellName
-                        , jeffCellName: jeffCellName
-                    };
+                //Ensure worker.results.cells[cellName].sitesToGenes[siteName]
+                if(!worker.result.cells[cellName].sitesToGenes.hasOwnProperty(siteName)) {
+                    worker.result.cells[cellName].sitesToGenes[siteName] = [];
+                }
+
+                //TODO Add placeholder to sets to show this TIS has this gene for this cell
+                worker.result.cells[cellName].sitesToGenes[siteName].push(geneName);
+
+                //Ensure worker.result.genes[geneName]
+                if(!worker.result.genes.hasOwnProperty(geneName)) {
+                    worker.result.genes[geneName] = { rows: {} };
+                }
+
+                //Ensure worker.result.genes[geneName].rows[cellName]
+                if(!worker.result.genes[geneName].rows.hasOwnProperty(cellName)) {
+                    worker.result.genes[geneName].rows[cellName] = generatedDataRow;
+                }
+
+                else {
+                    worker.result.genes[geneName].rows[cellName] =
+                        Object.assign(worker.result.genes[geneName].rows[cellName], generatedDataRow);
                 }
 
             });
 
             lineReader.on('close', () => {
-                console.log('+++ close');
                 resolve();
             });
         });
     }
 
-    parseGeneToCellMap(fileName) {
+    /**
+     *
+     */
+    calcSiteGeneSetsByCellType() {
+        return new Promise((resolve, reject) => {
+            let worker = MicroscopiumWorker.getInstance();
 
+            for (let cellName in worker.result.cells) {
+                let cell = worker.result.cells[cellName];
+
+                //The order here is important: proceed from highest set-intersection potential to lowest (single site)
+                //We do this because we will be removing duplicate genes from the single site totals as we find intersection
+                let vennSets = [
+                    {sets: [SITES.UCSD_SN, SITES.UMICH_SC, SITES.UCSF_SC], size: 0},
+                    {sets: [SITES.UCSD_SN, SITES.UCSF_SC], size: 0},
+                    {sets: [SITES.UCSD_SN, SITES.UMICH_SC], size: 0},
+                    {sets: [SITES.UCSF_SC, SITES.UMICH_SC], size: 0},
+                    {sets: [SITES.UCSD_SN], size: 0},
+                    {sets: [SITES.UCSF_SC], size: 0},
+                    {sets: [SITES.UMICH_SC], size: 0}
+                ];
+
+                for (let vennSetIndex in vennSets) {
+                    let vennSet = vennSets[vennSetIndex];
+
+                    //Ensure that all sites for the venn set under calculation have contributed genes
+                    let allSetSitesPresentInThisCell = true;
+
+                    for (let siteNameIndex in vennSet.sets) {
+                        let siteName = vennSet.sets[siteNameIndex];
+
+                        if (!cell.sitesToGenes.hasOwnProperty(siteName)) {
+                            allSetSitesPresentInThisCell = false;
+                            break;
+                        }
+                    }
+
+                    if (!allSetSitesPresentInThisCell) {
+                        continue;
+                    }
+
+                    //If there is only one site in this vennSet, skip intersection derivation
+                    let size = 0
+                        , siteCount = vennSet.sets.length;
+
+                    if (siteCount === 1) {
+                        let siteName = vennSet.sets[0];
+                        size = cell.sitesToGenes[siteName].length;
+                    }
+
+                    else {
+                        //First, find the intersection between the given arrays
+                        // https://lodash.com/docs/#intersection
+                        // https://www.w3schools.com/js/js_function_apply.asp
+                        let intersect = _.intersection.apply(_, Object.values(cell.sitesToGenes));
+
+                        //Second, count the resulting set size (the intersection)
+                        size = intersect.length;
+
+                        //Third, remove the common elements from the single-site arrays
+                        //https://lodash.com/docs/4.17.11#pullAllWith
+                        for (let siteName in cell.sitesToGenes) {
+                            let siteGenes = cell.sitesToGenes[siteName];
+                            _.pullAllWith(siteGenes, intersect, (a, b) => { return a === b; });
+                        }
+                    }
+
+                    //Last, save the size to the vennSet
+                    vennSet.size = size;
+                }
+
+                //Assign to cell.sets
+                cell.sets = vennSets;
+            }
+
+            resolve();
+        });
     }
 }
 
-module.exports = MicroscopiumWorker;
+module.exports = { MicroscopiumWorker: MicroscopiumWorker, SITES: SITES };
 
 
 
