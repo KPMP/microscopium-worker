@@ -15,11 +15,11 @@ class MicroscopiumWorker {
 
     constructor() {
         this.result = { cells: {}, genes: {} };
+        this.state = { lineTicker: 0 };
     }
 
     static getInstance() {
         if(MicroscopiumWorker.instance == null) {
-            console.log('!!! instancing MicroscopiumWorker');
             MicroscopiumWorker.instance = new MicroscopiumWorker();
         }
 
@@ -47,7 +47,7 @@ class MicroscopiumWorker {
                     , f_avgLogFc = parseFloat(avgLogFc);
 
                 //Skip the header row
-                if(geneName.toLowerCase() == 'cell type') {
+                if(geneName.toLowerCase() == 'gene symbol') {
                     return;
                 }
 
@@ -106,42 +106,86 @@ class MicroscopiumWorker {
      *
      */
     calcSiteGeneSetsByCellType() {
-        let worker = MicroscopiumWorker.getInstance();
+        return new Promise((resolve, reject) => {
+            let worker = MicroscopiumWorker.getInstance();
 
-        for(let cell in worker.result.cells) {
+            for (let cellName in worker.result.cells) {
+                let cell = worker.result.cells[cellName]
+                    , debugMode = cellName === 'Proximal tubule';
 
-            let vennSets = [
-                { sets: [SITES.UCSD_SN], size: 0 },
-                { sets: [SITES.UCSF_SC], size: 0 },
-                { sets: [SITES.UMICH_SC], size: 0 },
-                { sets: [SITES.UCSD_SN, SITES.UCSF_SC], size: 0 },
-                { sets: [SITES.UCSD_SN, SITES.UMICH_SC], size: 0 },
-                { sets: [SITES.UCSD_SN, SITES.UMICH_SC, SITES.UCSF_SC], size: 0 },
-            ];
+                //The order here is important: proceed from highest set-intersection potential to lowest (single site)
+                //We do this because we will be removing duplicate genes from the single site totals as we find intersection
+                let vennSets = [
+                    {sets: [SITES.UCSD_SN, SITES.UMICH_SC, SITES.UCSF_SC], size: 0},
+                    {sets: [SITES.UCSD_SN, SITES.UCSF_SC], size: 0},
+                    {sets: [SITES.UCSD_SN, SITES.UMICH_SC], size: 0},
+                    {sets: [SITES.UCSF_SC, SITES.UMICH_SC], size: 0},
+                    {sets: [SITES.UCSD_SN], size: 0},
+                    {sets: [SITES.UCSF_SC], size: 0},
+                    {sets: [SITES.UMICH_SC], size: 0}
+                ];
 
-            for(let vennSet in vennSets) {
+                for (let vennSetIndex in vennSets) {
+                    let vennSet = vennSets[vennSetIndex];
 
-                //TODO First ensure that all sites for the venn set under calculation have contributed genes
-                let allSetSitesPresentInThisCell = true;
+                    //TODO Ensure that all sites for the venn set under calculation have contributed genes
+                    let allSetSitesPresentInThisCell = true;
 
-                for(let siteName in vennSet.sets) {
-                    if(!cell.sitesToGenes.hasOwnProperty(siteName)) {
-                        allSetSitesPresentInThisCell = false;
-                        break;
+                    for (let siteNameIndex in vennSet.sets) {
+                        let siteName = vennSet.sets[siteNameIndex];
+
+                        if (!cell.sitesToGenes.hasOwnProperty(siteName)) {
+                            allSetSitesPresentInThisCell = false;
+                            if(debugMode) console.log('!!! Site, cell not found: ', siteName, cellName);
+                            break;
+                        }
                     }
+
+                    if (!allSetSitesPresentInThisCell) {
+                        continue;
+                    }
+
+                    //TODO If there is only one site in this vennSet, skip intersection derivation
+                    let size = 0
+                        , siteCount = vennSet.sets.length;
+
+                    if(debugMode) console.log('vennSet site count, cell: ', siteCount, cellName);
+
+                    if (siteCount === 1) {
+                        let siteName = vennSet.sets[0];
+                        size = cell.sitesToGenes[siteName].length;
+                        if(debugMode) console.log('+++ Saving size ' + size + ' for single site, cell: ', siteName, cellName);
+                    }
+
+                    else {
+                        //TODO First, find the intersection between the given arrays
+                        // https://lodash.com/docs/#intersection
+                        // https://www.w3schools.com/js/js_function_apply.asp
+                        let intersect = _.intersection.apply(_, Object.values(cell.sitesToGenes));
+
+                        if(debugMode) console.log('intersect: ', intersect);
+
+                        //TODO Second, count the resulting set size (the intersection)
+                        size = intersect.length;
+
+                        //TODO Third, remove the common elements from the single-site arrays
+                        //https://lodash.com/docs/4.17.11#pullAll
+                        for (let siteName in Object.keys(cell.sitesToGenes)) {
+                            _.pullAllWith(cell.sitesToGenes[siteName], intersect, (a, b) => { a === b; });
+                        }
+                    }
+
+                    //TODO Last, save the size to the vennSet
+                    vennSet.size = size;
                 }
 
-                if(!allSetSitesPresentInThisCell) {
-                    continue;
-                }
-
-                //TODO Second find the intersection between the given arrays
-
-                //TODO Third remove the common elements from the original arrays
-
-                //TODO Last count the resulting arrays and save them to the size value of the vennSet
+                //Assign to cell.sets
+                cell.sets = vennSets;
             }
-        }
+
+            console.log('+++ Done');
+            resolve();
+        });
     }
 }
 
