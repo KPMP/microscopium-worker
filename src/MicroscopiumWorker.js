@@ -8,6 +8,7 @@ const SITES = {
 };
 
 const AVG_LOG_FC = '_avgLogFc';
+const P_VAL_ADJ = '_p_val_adj';
 
 class MicroscopiumWorker {
 
@@ -46,9 +47,7 @@ class MicroscopiumWorker {
 
                 //Build the row we'll add to the gene and cell collections
                 let generatedDataRow = { gene: geneName, cell: cellName };
-                generatedDataRow[siteName] = pValAdj;
-                generatedDataRow[siteName + AVG_LOG_FC] = avgLogFc;
-                generatedDataRow['f_' + siteName] = f_pValAdj;
+                generatedDataRow['f_' + siteName + P_VAL_ADJ]  = f_pValAdj;
                 generatedDataRow['f_' + siteName + AVG_LOG_FC] = f_avgLogFc;
 
                 //Ensure worker.result.cells[cellName]
