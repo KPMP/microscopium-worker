@@ -1,4 +1,4 @@
-gene,p_val_adj,avg_logFC,umich_sc_cell_name
+gene,p_val_adj,avg_logFC,site_cell_name
 ALDOB,0,3.623498747,Proximal
 MT1G,0,3.454825961,Proximal
 GPX3,0,3.339106277,Proximal

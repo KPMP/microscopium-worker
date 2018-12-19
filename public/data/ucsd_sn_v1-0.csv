@@ -1,4 +1,4 @@
-gene,p_val_adj,avg_logFC,ucsd_sn_cell_name
+gene,p_val_adj,avg_logFC,site_cell_name
 SPATA22,0,4.303218786,EPC_SPATA22
 PAMR1,0,2.733724162,EPC_SPATA22
 CTD-3037G24.3,2.99E-142,2.911559237,EPC_SPATA22

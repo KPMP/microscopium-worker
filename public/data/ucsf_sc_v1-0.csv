@@ -1,4 +1,4 @@
-symbol,p_val_adj,avg_logFC,ucsf_sc_cell_name
+gene,p_val_adj,avg_logFC,site_cell_name
 TYROBP,0,2.289394,0 - endothelial & immune
 CD74,0,1.485665,0 - endothelial & immune
 MSR1,0,1.600252,0 - endothelial & immune
