@@ -45,6 +45,11 @@ class MicroscopiumWorker {
                     , f_pValAdj  = parseFloat(pValAdj)
                     , f_avgLogFc = parseFloat(avgLogFc);
 
+                //Skip the header row
+                if(geneName.toLowerCase() == 'cell type') {
+                    return;
+                }
+
                 //Build the row we'll add to the gene and cell collections
                 let generatedDataRow = { gene: geneName, cell: cellName };
                 generatedDataRow['f_' + siteName + P_VAL_ADJ]  = f_pValAdj;
@@ -52,7 +57,7 @@ class MicroscopiumWorker {
 
                 //Ensure worker.result.cells[cellName]
                 if(!worker.result.cells.hasOwnProperty(cellName)) {
-                    worker.result.cells[cellName] = { sets: [], rows: {} };
+                    worker.result.cells[cellName] = { sets: {}, rows: {} };
                 }
 
                 //Ensure worker.result.cells[cellName].rows[geneName]
@@ -64,6 +69,14 @@ class MicroscopiumWorker {
                     worker.result.cells[cellName].rows[geneName] =
                         Object.assign(worker.result.cells[cellName].rows[geneName], generatedDataRow);
                 }
+
+                //Ensure worker.results.cells[cellName].sets[siteName]
+                if(!worker.result.cells[cellName].sets.hasOwnProperty(siteName)) {
+                    worker.result.cells[cellName].sets[siteName] = [];
+                }
+
+                //TODO Add placeholder to sets to show this TIS has this gene for this cell
+                worker.result.cells[cellName].sets[siteName].push(geneName);
 
                 //Ensure worker.result.genes[geneName]
                 if(!worker.result.genes.hasOwnProperty(geneName)) {
@@ -90,6 +103,17 @@ class MicroscopiumWorker {
 
     calcCellSiteCounts() {
         //TODO iterate over all genes in worker.result.cells.rows; build worker.result.cells.sets with all non-false values for sites
+        // let worker = MicroscopiumWorker.getInstance();
+        //
+        // for(let cell in worker.result.cells) {
+        //
+        //     let sets = cell.sets;
+        //
+        //
+        //     for(let gene in cell.rows) {
+        //
+        //     }
+        // }
     }
 }
 
