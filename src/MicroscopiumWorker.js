@@ -170,8 +170,11 @@ class MicroscopiumWorker {
 
                         //TODO Third, remove the common elements from the single-site arrays
                         //https://lodash.com/docs/4.17.11#pullAll
-                        for (let siteName in Object.keys(cell.sitesToGenes)) {
-                            _.pullAllWith(cell.sitesToGenes[siteName], intersect, (a, b) => { a === b; });
+                        for (let siteName in cell.sitesToGenes) {
+                            let siteGenes = cell.sitesToGenes[siteName];
+                            if(debugMode) console.log('siteName: ', siteName);
+                            if(debugMode) console.log('siteGenes: ', siteGenes);
+                            _.pullAllWith(siteGenes, intersect, (a, b) => { return a === b; });
                         }
                     }
 
