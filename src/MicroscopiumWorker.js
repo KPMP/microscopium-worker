@@ -57,7 +57,7 @@ class MicroscopiumWorker {
 
                 //Ensure worker.result.cells[cellName]
                 if(!worker.result.cells.hasOwnProperty(cellName)) {
-                    worker.result.cells[cellName] = { sets: {}, rows: {} };
+                    worker.result.cells[cellName] = { sitesToGenes: {}, rows: {} };
                 }
 
                 //Ensure worker.result.cells[cellName].rows[geneName]
@@ -70,13 +70,13 @@ class MicroscopiumWorker {
                         Object.assign(worker.result.cells[cellName].rows[geneName], generatedDataRow);
                 }
 
-                //Ensure worker.results.cells[cellName].sets[siteName]
-                if(!worker.result.cells[cellName].sets.hasOwnProperty(siteName)) {
-                    worker.result.cells[cellName].sets[siteName] = [];
+                //Ensure worker.results.cells[cellName].sitesToGenes[siteName]
+                if(!worker.result.cells[cellName].sitesToGenes.hasOwnProperty(siteName)) {
+                    worker.result.cells[cellName].sitesToGenes[siteName] = [];
                 }
 
                 //TODO Add placeholder to sets to show this TIS has this gene for this cell
-                worker.result.cells[cellName].sets[siteName].push(geneName);
+                worker.result.cells[cellName].sitesToGenes[siteName].push(geneName);
 
                 //Ensure worker.result.genes[geneName]
                 if(!worker.result.genes.hasOwnProperty(geneName)) {
@@ -107,7 +107,7 @@ class MicroscopiumWorker {
         //
         // for(let cell in worker.result.cells) {
         //
-        //     let sets = cell.sets;
+        //     let sitesToGenes = cell.sitesToGenes;
         //
         //
         //     for(let gene in cell.rows) {
