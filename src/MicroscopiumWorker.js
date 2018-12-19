@@ -1,5 +1,6 @@
 const readline = require('readline');
 const fs = require('fs');
+const _ = require('lodash');
 
 const SITES = {
     UMICH_SC: 'umich_sc'
@@ -101,19 +102,46 @@ class MicroscopiumWorker {
         });
     }
 
-    calcCellSiteCounts() {
-        //TODO iterate over all genes in worker.result.cells.rows; build worker.result.cells.sets with all non-false values for sites
-        // let worker = MicroscopiumWorker.getInstance();
-        //
-        // for(let cell in worker.result.cells) {
-        //
-        //     let sitesToGenes = cell.sitesToGenes;
-        //
-        //
-        //     for(let gene in cell.rows) {
-        //
-        //     }
-        // }
+    /**
+     *
+     */
+    calcSiteGeneSetsByCellType() {
+        let worker = MicroscopiumWorker.getInstance();
+
+        for(let cell in worker.result.cells) {
+
+            let vennSets = [
+                { sets: [SITES.UCSD_SN], size: 0 },
+                { sets: [SITES.UCSF_SC], size: 0 },
+                { sets: [SITES.UMICH_SC], size: 0 },
+                { sets: [SITES.UCSD_SN, SITES.UCSF_SC], size: 0 },
+                { sets: [SITES.UCSD_SN, SITES.UMICH_SC], size: 0 },
+                { sets: [SITES.UCSD_SN, SITES.UMICH_SC, SITES.UCSF_SC], size: 0 },
+            ];
+
+            for(let vennSet in vennSets) {
+
+                //TODO First ensure that all sites for the venn set under calculation have contributed genes
+                let allSetSitesPresentInThisCell = true;
+
+                for(let siteName in vennSet.sets) {
+                    if(!cell.sitesToGenes.hasOwnProperty(siteName)) {
+                        allSetSitesPresentInThisCell = false;
+                        break;
+                    }
+                }
+
+                if(!allSetSitesPresentInThisCell) {
+                    continue;
+                }
+
+                //TODO Second find the intersection between the given arrays
+
+                //TODO Third remove the common elements from the original arrays
+
+                //TODO Last count the resulting arrays and save them to the size value of the vennSet
+            }
+        }
     }
 }
 
