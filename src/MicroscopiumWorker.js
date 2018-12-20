@@ -14,7 +14,7 @@ const P_VAL_ADJ = '_p_val_adj';
 class MicroscopiumWorker {
 
     constructor() {
-        this.result = { cells: {}, genes: {} };
+        this.clearData();
     }
 
     static getInstance() {
@@ -23,6 +23,11 @@ class MicroscopiumWorker {
         }
 
         return MicroscopiumWorker.instance;
+    }
+
+    clearData() {
+        this.result = { cells: {}, genes: {} };
+        return this;
     }
 
     /**
@@ -46,7 +51,7 @@ class MicroscopiumWorker {
                     , f_avgLogFc = parseFloat(avgLogFc);
 
                 //Skip the header row
-                if(geneName.toLowerCase() == 'gene symbol') {
+                if(geneName.toLowerCase() === 'gene symbol') {
                     return;
                 }
 
@@ -142,6 +147,12 @@ class MicroscopiumWorker {
                         continue;
                     }
 
+                    //Derive the SUPERSET SIZE of all elements in this set!  By "superset",
+                    //I mean we will deliberately double-count genes appearing in intersections between sites.
+                    //Genes counted by 1 site are counted once; genes counted by 2 sites are counted twice;
+                    //genes counted by 3 sites are counted 3 times; etc.  Later we can do the set math to clean
+                    //up the counts in an exclusive way.
+
                     //If there is only one site in this vennSet, skip intersection derivation
                     let size = 0
                         , siteCount = vennSet.sets.length;
@@ -159,13 +170,6 @@ class MicroscopiumWorker {
 
                         //Second, count the resulting set size (the intersection)
                         size = intersect.length;
-
-                        //Third, remove the common elements from the single-site arrays
-                        //https://lodash.com/docs/4.17.11#pullAllWith
-                        for (let siteName in cell.sitesToGenes) {
-                            let siteGenes = cell.sitesToGenes[siteName];
-                            _.pullAllWith(siteGenes, intersect, (a, b) => { return a === b; });
-                        }
                     }
 
                     //Last, save the size to the vennSet
