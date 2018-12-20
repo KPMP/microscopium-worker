@@ -14,7 +14,7 @@ const P_VAL_ADJ = '_p_val_adj';
 class MicroscopiumWorker {
 
     constructor() {
-        this.result = { cells: {}, genes: {} };
+        this.clearData();
     }
 
     static getInstance() {
@@ -23,6 +23,11 @@ class MicroscopiumWorker {
         }
 
         return MicroscopiumWorker.instance;
+    }
+
+    clearData() {
+        this.result = { cells: {}, genes: {} };
+        return this;
     }
 
     /**
