@@ -51,7 +51,7 @@ class MicroscopiumWorker {
                     , f_avgLogFc = parseFloat(avgLogFc);
 
                 //Skip the header row
-                if(geneName.toLowerCase() == 'gene symbol') {
+                if(geneName.toLowerCase() === 'gene symbol') {
                     return;
                 }
 
