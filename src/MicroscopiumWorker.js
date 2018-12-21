@@ -119,13 +119,13 @@ class MicroscopiumWorker {
                 //The order here is important: proceed from highest set-intersection potential to lowest (single site)
                 //We do this because we will be removing duplicate genes from the single site totals as we find intersection
                 let vennSets = [
-                    {sets: [SITES.UCSD_SN, SITES.UMICH_SC, SITES.UCSF_SC], size: 0},
+                    {sets: [SITES.UCSD_SN], size: 0},
+                    {sets: [SITES.UCSF_SC], size: 0},
+                    {sets: [SITES.UMICH_SC], size: 0},
                     {sets: [SITES.UCSD_SN, SITES.UCSF_SC], size: 0},
                     {sets: [SITES.UCSD_SN, SITES.UMICH_SC], size: 0},
                     {sets: [SITES.UCSF_SC, SITES.UMICH_SC], size: 0},
-                    {sets: [SITES.UCSD_SN], size: 0},
-                    {sets: [SITES.UCSF_SC], size: 0},
-                    {sets: [SITES.UMICH_SC], size: 0}
+                    {sets: [SITES.UCSD_SN, SITES.UMICH_SC, SITES.UCSF_SC], size: 0}
                 ];
 
                 for (let vennSetIndex in vennSets) {
