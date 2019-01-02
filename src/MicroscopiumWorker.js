@@ -112,7 +112,7 @@ class MicroscopiumWorker {
                 });
 
                 //Once totals are counted, drop the keys from the cell's map; we no longer need them
-                cell.sitesToGenes = _.values(cell.sitesToGenes);
+                //cell.sitesToGenes = _.values(cell.sitesToGenes);
             });
 
             resolve();
