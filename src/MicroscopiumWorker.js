@@ -95,7 +95,7 @@ class MicroscopiumWorker {
             _.each(worker.result.cells, (cell, cellName) => {
 
                 //Generate an empty (and key-indexed) map of venn intersection sets to hold gene totals for this cell
-                cell.sitesToGenes = {
+                cell.sets = {
                     'ucsd_sn': {sets: [SITES.UCSD_SN], size: 0},
                     'ucsf_sc': {sets: [SITES.UCSF_SC], size: 0},
                     'umich_sc': {sets: [SITES.UMICH_SC], size: 0},
@@ -108,11 +108,11 @@ class MicroscopiumWorker {
                 //Increment the count for the associated site
                 _.each(cell.rows, (row) => {
                     row.sites.sort();
-                    cell.sitesToGenes[row.sites.join('_')].size++;
+                    cell.sets[row.sites.join('_')].size++;
                 });
 
                 //Once totals are counted, drop the keys from the cell's map; we no longer need them
-                //cell.sitesToGenes = _.values(cell.sitesToGenes);
+                cell.sets = _.values(cell.sets);
             });
 
             resolve();
