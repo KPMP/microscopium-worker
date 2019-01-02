@@ -62,42 +62,20 @@ class MicroscopiumWorker {
 
                 //Ensure worker.result.cells[cellName]
                 if(!worker.result.cells.hasOwnProperty(cellName)) {
-                    worker.result.cells[cellName] = { sitesToGenes: {}, rows: {} };
+                    worker.result.cells[cellName] = { rows: {} };
                 }
 
                 //Ensure worker.result.cells[cellName].rows[geneName]
                 if(!worker.result.cells[cellName].rows.hasOwnProperty(geneName)) {
                     worker.result.cells[cellName].rows[geneName] = generatedDataRow;
+                    worker.result.cells[cellName].rows[geneName].sites = [ siteName ];
                 }
 
                 else {
                     worker.result.cells[cellName].rows[geneName] =
                         Object.assign(worker.result.cells[cellName].rows[geneName], generatedDataRow);
+                    worker.result.cells[cellName].rows[geneName].sites.push(siteName);
                 }
-
-                //Ensure worker.results.cells[cellName].sitesToGenes[siteName]
-                if(!worker.result.cells[cellName].sitesToGenes.hasOwnProperty(siteName)) {
-                    worker.result.cells[cellName].sitesToGenes[siteName] = [];
-                }
-
-                //TODO Add placeholder to sets to show this TIS has this gene for this cell
-                worker.result.cells[cellName].sitesToGenes[siteName].push(geneName);
-
-                //Ensure worker.result.genes[geneName]
-                if(!worker.result.genes.hasOwnProperty(geneName)) {
-                    worker.result.genes[geneName] = { rows: {} };
-                }
-
-                //Ensure worker.result.genes[geneName].rows[cellName]
-                if(!worker.result.genes[geneName].rows.hasOwnProperty(cellName)) {
-                    worker.result.genes[geneName].rows[cellName] = generatedDataRow;
-                }
-
-                else {
-                    worker.result.genes[geneName].rows[cellName] =
-                        Object.assign(worker.result.genes[geneName].rows[cellName], generatedDataRow);
-                }
-
             });
 
             lineReader.on('close', () => {
@@ -109,7 +87,42 @@ class MicroscopiumWorker {
     /**
      *
      */
+
     calcSiteGeneSetsByCellType() {
+        return new Promise((resolve, reject) => {
+            let worker = MicroscopiumWorker.getInstance();
+
+            _.each(worker.result.cells, (cell, cellName) => {
+
+                //Generate an empty (and key-indexed) map of venn intersection sets to hold gene totals for this cell
+                cell.sitesToGenes = {
+                    'ucsd_sn': {sets: [SITES.UCSD_SN], size: 0},
+                    'ucsf_sc': {sets: [SITES.UCSF_SC], size: 0},
+                    'umich_sc': {sets: [SITES.UMICH_SC], size: 0},
+                    'ucsd_sn_ucsf_sc': {sets: [SITES.UCSD_SN, SITES.UCSF_SC], size: 0},
+                    'ucsd_sn_umich_sc': {sets: [SITES.UCSD_SN, SITES.UMICH_SC], size: 0},
+                    'ucsf_sc_umich_sc': {sets: [SITES.UCSF_SC, SITES.UMICH_SC], size: 0},
+                    'ucsd_sn_ucsf_sc_umich_sc': {sets: [SITES.UCSD_SN, SITES.UCSF_SC, SITES.UMICH_SC], size: 0}
+                }
+
+                //Increment the count for the associated site
+                _.each(cell.rows, (row) => {
+                    row.sites.sort();
+                    cell.sitesToGenes[row.sites.join('_')].size++;
+                });
+
+                //Once totals are counted, drop the keys from the cell's map; we no longer need them
+                //cell.sitesToGenes = _.values(cell.sitesToGenes);
+            });
+
+            resolve();
+        });
+    }
+
+    /**
+     *
+     */
+    calcSiteGeneSetsByCellType_old() {
         return new Promise((resolve, reject) => {
             let worker = MicroscopiumWorker.getInstance();
 
