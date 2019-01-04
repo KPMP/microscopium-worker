@@ -118,6 +118,19 @@ class MicroscopiumWorker {
             resolve();
         });
     }
+
+    parseGeneExpressionToCellMap(fileName, siteName) {
+        return new Promise((resolve, reject) => {
+            let worker = MicroscopiumWorker.getInstance()
+                , lineReader = readline.createInterface({input: fs.createReadStream(fileName)});
+
+            lineReader.on('line', (line) => {
+                //TODO handle a gene expression map row here
+            });
+
+            resolve();
+        });
+    }
 }
 
 module.exports = { MicroscopiumWorker: MicroscopiumWorker, SITES: SITES };
